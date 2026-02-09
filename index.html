@@ -3,14 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calcolatore VLSM</title>
+    <title>Calcolatore online VLSM - Sistemi e reti</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
     <style>
         :root {
             --primary: #2563eb;
             --bg: #f8fafc;
             --card: #ffffff;
             --text: #1e293b;
-            --border: #e2e8f0;
+            --border: #cbd5e1;
         }
 
         body {
@@ -18,11 +22,11 @@
             background-color: var(--bg);
             color: var(--text);
             padding: 2rem;
-            max-width: 1000px;
+            max-width: 1200px; /* Allargato per far stare le formule */
             margin: 0 auto;
         }
 
-        h1 { text-align: center; color: var(--primary); }
+        h1 { text-align: center; color: var(--primary); margin-bottom: 2rem; }
         
         .container {
             background: var(--card);
@@ -31,107 +35,131 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
+        /* Input styling */
         .input-group {
             margin-bottom: 1.5rem;
             display: flex;
             gap: 1rem;
-            align-items: center;
+            align-items: flex-end;
         }
 
-        label { font-weight: 600; }
+        label { display: block; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.9rem;}
         
-        input[type="text"], input[type="number"] {
-            padding: 0.5rem;
+        input {
+            padding: 0.6rem;
             border: 1px solid var(--border);
             border-radius: 6px;
             width: 100%;
+            font-size: 1rem;
         }
 
+        /* Buttons */
         button {
             background-color: var(--primary);
             color: white;
             border: none;
-            padding: 0.6rem 1.2rem;
+            padding: 0.7rem 1.4rem;
             border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
-            transition: opacity 0.2s;
+            transition: all 0.2s;
         }
-
-        button:hover { opacity: 0.9; }
+        button:hover { filter: brightness(110%); }
         button.danger { background-color: #ef4444; }
         button.secondary { background-color: #64748b; }
 
-        .subnet-list {
-            margin-bottom: 2rem;
-            border-top: 1px solid var(--border);
-        }
-
+        /* Subnet input rows */
         .subnet-row {
             display: grid;
             grid-template-columns: 2fr 1fr 50px;
             gap: 1rem;
-            padding: 1rem 0;
-            border-bottom: 1px solid var(--border);
+            margin-bottom: 0.8rem;
             align-items: center;
         }
 
+        /* Table Styling */
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 2rem;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+            background: white;
         }
 
-        th, td {
-            padding: 0.75rem;
+        th {
+            background-color: #f1f5f9;
+            padding: 1rem;
             text-align: left;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 2px solid var(--border);
+            color: #475569;
         }
 
-        th { background-color: #f1f5f9; }
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        /* Highlight IP */
+        .ip-highlight { font-family: monospace; color: var(--primary); font-weight: bold; }
         
-        .error { color: #ef4444; margin-top: 0.5rem; font-size: 0.9rem; }
+        /* Math container */
+        .math-expl {
+            font-size: 0.85rem;
+            color: #475569;
+            background: #f8fafc;
+            padding: 0.5rem;
+            border-radius: 6px;
+            border: 1px dashed var(--border);
+        }
+
+        .error { color: #ef4444; padding: 1rem; background: #fee2e2; border-radius: 6px; display: none; margin-top: 1rem;}
     </style>
 </head>
 <body>
 
-    <h1>Generatore VLSM</h1>
+    <h1>Generatore VLSM & Analisi Matematica</h1>
 
     <div class="container">
         <div class="input-group">
             <div style="flex: 2;">
-                <label>Indirizzo IP di Rete (es. 192.168.1.0)</label>
-                <input type="text" id="major-network" placeholder="192.168.1.0" value="192.168.1.0">
+                <label>Indirizzo IP di Rete (Major Network)</label>
+                <input type="text" id="major-network" value="192.168.1.0" placeholder="e.g. 172.16.0.0">
             </div>
             <div style="flex: 1;">
                 <label>CIDR (/xx)</label>
-                <input type="number" id="major-cidr" min="1" max="32" value="24">
+                <input type="number" id="major-cidr" value="24" min="1" max="30">
             </div>
         </div>
 
-        <h3>Requisiti Sottoreti</h3>
-        <div class="subnet-list" id="subnet-container">
+        <hr style="border: 0; border-top: 1px solid var(--border); margin: 2rem 0;">
+
+        <h3>Definisci le Sottoreti</h3>
+        <p style="font-size: 0.9rem; color: #666; margin-bottom: 1rem;">
+            Nota: L'algoritmo riordinerà automaticamente le sottoreti dalla più grande alla più piccola per evitare frammentazione.
+        </p>
+
+        <div id="subnet-container">
             </div>
 
-        <div class="input-group">
-            <button class="secondary" onclick="addSubnetRow()">+ Aggiungi Sottorete</button>
-            <button onclick="calculateVLSM()">Calcola VLSM</button>
+        <div class="input-group" style="margin-top: 1.5rem;">
+            <button class="secondary" onclick="addSubnetRow()">+ Aggiungi Riga</button>
+            <button onclick="calculateVLSM()">Calcola e Mostra Formule</button>
         </div>
+
         <div id="error-msg" class="error"></div>
 
         <div id="result-area" style="display:none;">
-            <h3>Risultati</h3>
+            <h3>Tabella di Allocazione VLSM</h3>
             <table>
                 <thead>
                     <tr>
-                        <th>Nome</th>
-                        <th>Host Richiesti</th>
-                        <th>Host Allocati</th>
-                        <th>Indirizzo Sottorete</th>
-                        <th>CIDR</th>
-                        <th>Range Host</th>
-                        <th>Broadcast</th>
+                        <th style="width: 15%">Nome</th>
+                        <th style="width: 10%">Host Rich.</th>
+                        <th style="width: 35%">Analisi Matematica (LaTeX)</th>
+                        <th style="width: 15%">Indirizzo Rete</th>
+                        <th style="width: 10%">CIDR</th>
+                        <th style="width: 15%">Range Utilizzabile</th>
                     </tr>
                 </thead>
                 <tbody id="result-body"></tbody>
@@ -140,7 +168,8 @@
     </div>
 
     <script>
-        // Funzioni di utilità per IP
+        // --- 1. FUNZIONI DI SUPPORTO IP (Bitwise) ---
+        
         function ipToLong(ip) {
             return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0;
         }
@@ -154,122 +183,149 @@
             ].join('.');
         }
 
-        // Gestione UI
-        let subnetCount = 0;
+        // --- 2. GESTIONE INTERFACCIA ---
+
+        let subnetCounter = 0;
 
         function addSubnetRow() {
-            subnetCount++;
+            subnetCounter++;
             const container = document.getElementById('subnet-container');
             const div = document.createElement('div');
             div.className = 'subnet-row';
             div.innerHTML = `
-                <input type="text" placeholder="Nome Sottorete (es. LAN A)" class="sub-name" value="Subnet ${subnetCount}">
-                <input type="number" placeholder="Host necessari" class="sub-hosts" min="1">
-                <button class="danger" onclick="this.parentElement.remove()">X</button>
+                <input type="text" class="sub-name" value="Sottorete ${String.fromCharCode(64 + subnetCounter)}" placeholder="Nome">
+                <input type="number" class="sub-hosts" placeholder="Host necessari" min="2">
+                <button class="danger" onclick="this.parentElement.remove()" title="Rimuovi">×</button>
             `;
             container.appendChild(div);
         }
 
-        // Inizializza con 2 righe
+        // Inizializza con 3 righe per l'esempio
         addSubnetRow();
         addSubnetRow();
+        addSubnetRow();
+
+        // --- 3. LOGICA CORE VLSM ---
 
         function calculateVLSM() {
             const errorDiv = document.getElementById('error-msg');
             const resultArea = document.getElementById('result-area');
             const tbody = document.getElementById('result-body');
             
-            errorDiv.innerText = '';
+            errorDiv.style.display = 'none';
             tbody.innerHTML = '';
 
-            // 1. Validazione Input Rete
+            // Input Validation
             const majorIpStr = document.getElementById('major-network').value;
             const majorCidr = parseInt(document.getElementById('major-cidr').value);
 
-            if (!validateIp(majorIpStr)) {
-                errorDiv.innerText = "Indirizzo IP non valido.";
+            if(!majorIpStr.match(/^(\d{1,3}\.){3}\d{1,3}$/)) {
+                showError("Indirizzo IP non valido.");
                 return;
             }
 
-            // 2. Raccogli dati sottoreti
-            const rows = document.querySelectorAll('.subnet-row');
+            // Raccogli dati
             let subnets = [];
-            
-            rows.forEach(row => {
+            document.querySelectorAll('.subnet-row').forEach(row => {
                 const name = row.querySelector('.sub-name').value;
                 const hosts = parseInt(row.querySelector('.sub-hosts').value);
-                if (!isNaN(hosts) && hosts > 0) {
-                    subnets.push({ name, hosts });
-                }
+                if (!isNaN(hosts)) subnets.push({ name, hosts });
             });
 
-            if (subnets.length === 0) {
-                errorDiv.innerText = "Inserisci almeno una sottorete con host > 0.";
+            if(subnets.length === 0) {
+                showError("Inserisci almeno una sottorete valida.");
                 return;
             }
 
-            // 3. ORDINAMENTO (Cruciale per VLSM: dal più grande al più piccolo)
+            // ORDINAMENTO (VLSM richiede dal più grande al più piccolo)
             subnets.sort((a, b) => b.hosts - a.hosts);
 
-            // 4. Calcolo
-            let currentIpLong = ipToLong(majorIpStr);
-            // Forza l'IP all'inizio del blocco CIDR fornito
-            // (es. se utente scrive 192.168.1.5/24, partiamo da 192.168.1.0)
-            const maskLong = -1 << (32 - majorCidr);
-            currentIpLong = currentIpLong & maskLong;
-
-            const maxIpLong = currentIpLong + Math.pow(2, 32 - majorCidr);
+            // Setup calcoli
+            let currentIp = ipToLong(majorIpStr);
+            // Maschera l'IP iniziale per assicurarsi che parta dall'inizio del blocco
+            const mask = -1 << (32 - majorCidr);
+            currentIp = currentIp & mask;
+            
+            const maxIp = currentIp + Math.pow(2, 32 - majorCidr);
 
             try {
                 subnets.forEach(sub => {
-                    // Trova la potenza di 2 necessaria
-                    // Host necessari + 2 (Network + Broadcast)
-                    let neededSize = sub.hosts + 2;
-                    let power = Math.ceil(Math.log2(neededSize));
-                    let newCidr = 32 - power;
-                    let blockSize = Math.pow(2, power);
+                    // CALCOLO MATEMATICO
+                    // 1. Host totali necessari (Host richiesti + Network Addr + Broadcast Addr)
+                    const totalNeeded = sub.hosts + 2;
+                    
+                    // 2. Trova n tale che 2^n >= totalNeeded
+                    const bitsHost = Math.ceil(Math.log2(totalNeeded)); // n
+                    
+                    // 3. Dimensione blocco
+                    const blockSize = Math.pow(2, bitsHost); // 2^n
+                    
+                    // 4. Host Allocati (reali utilizzabili)
+                    const allocatable = blockSize - 2;
 
-                    // Verifica se c'è spazio
-                    if (currentIpLong + blockSize > maxIpLong) {
-                        throw new Error(`Spazio insufficiente per ${sub.name}. Limite raggiunto.`);
+                    // 5. Nuovo CIDR
+                    const newCidr = 32 - bitsHost;
+
+                    // Controllo spazio
+                    if (currentIp + blockSize > maxIp) {
+                        throw new Error(`Spazio esaurito! Impossibile allocare la rete "${sub.name}" (richiede ${blockSize} indirizzi).`);
                     }
 
-                    // Calcolo indirizzi
-                    let networkIp = longToIp(currentIpLong);
-                    let broadcastLong = currentIpLong + blockSize - 1;
-                    let broadcastIp = longToIp(broadcastLong);
-                    let firstHost = longToIp(currentIpLong + 1);
-                    let lastHost = longToIp(broadcastLong - 1);
+                    // Calcolo indirizzi specifici
+                    const netIp = longToIp(currentIp);
+                    const rangeStart = longToIp(currentIp + 1);
+                    const rangeEnd = longToIp(currentIp + blockSize - 2);
+                    const broadcastIp = longToIp(currentIp + blockSize - 1);
 
-                    // Aggiungi riga alla tabella
+                    // --- GENERAZIONE FORMULE LATEX ---
+                    // Creiamo una stringa LaTeX per spiegare il calcolo
+                    const latexString = `
+                        \\begin{aligned}
+                        H_{req} &= ${sub.hosts} \\\\
+                        \\text{Size} &= 2^{\\lceil \\log_2(${sub.hosts} + 2) \\rceil} = 2^{${bitsHost}} = ${blockSize} \\\\
+                        H_{alloc} &= 2^{${bitsHost}} - 2 = \\mathbf{${allocatable}} \\\\
+                        \\text{CIDR} &= 32 - ${bitsHost} = /${newCidr}
+                        \\end{aligned}
+                    `;
+
+                    // Creazione riga tabella
                     const tr = document.createElement('tr');
+                    
+                    // Renderizziamo il LaTeX usando KaTeX dentro la cella
+                    let mathCellContent = `<div class="math-expl" id="math-${sub.name.replace(/\s/g, '')}"></div>`;
+                    
                     tr.innerHTML = `
-                        <td>${sub.name}</td>
+                        <td><strong>${sub.name}</strong></td>
                         <td>${sub.hosts}</td>
-                        <td>${blockSize - 2}</td>
-                        <td style="font-weight:bold; color:var(--primary)">${networkIp}</td>
+                        <td>${mathCellContent}</td>
+                        <td class="ip-highlight">${netIp}</td>
                         <td>/${newCidr}</td>
-                        <td>${firstHost} - ${lastHost}</td>
-                        <td>${broadcastIp}</td>
+                        <td>${rangeStart} <br>⬇<br> ${rangeEnd}</td>
                     `;
                     tbody.appendChild(tr);
 
-                    // Aggiorna puntatore IP per la prossima subnet
-                    currentIpLong += blockSize;
+                    // Render KaTeX after appending to DOM
+                    katex.render(latexString, tr.querySelector('.math-expl'), {
+                        throwOnError: false,
+                        displayMode: false
+                    });
+
+                    // Avanzamento IP
+                    currentIp += blockSize;
                 });
-                
+
                 resultArea.style.display = 'block';
 
             } catch (e) {
-                errorDiv.innerText = e.message;
+                showError(e.message);
             }
         }
 
-        function validateIp(ip) {
-            const regex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-            return regex.test(ip);
+        function showError(msg) {
+            const err = document.getElementById('error-msg');
+            err.innerText = msg;
+            err.style.display = 'block';
         }
     </script>
-
 </body>
 </html>
