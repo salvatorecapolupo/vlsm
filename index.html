@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VLSM Calculator - A038 Exam Edition</title>
+    <title>VLSM Calculator</title>
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -85,13 +85,13 @@
 </head>
 <body>
 
-    <h1>A038 Network Planner</h1>
-    <div class="subtitle">Strumento ottimizzato per Esame di Stato ITIA 2024</div>
+    <h1> VLSM - Network Planner </h1>
+    <div class="subtitle"> Strumento di verifica assegnamento IP con VLSM(Variable Length Subnet Mask) </div>
 
     <div class="container">
         <div class="input-group">
             <div class="input-wrapper" style="flex: 2;">
-                <label>Indirizzo IP Major Network (es. 10.100.0.0)</label>
+                <label>Indirizzo IP (es. 10.100.0.0)</label>
                 <input type="text" id="major-network" value="10.100.0.0">
             </div>
             <div class="input-wrapper" style="flex: 1;">
@@ -101,8 +101,8 @@
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('bulk')">Generazione Massiva (Esame)</button>
-            <button class="tab" onclick="switchTab('manual')">VLSM Manuale (Classico)</button>
+            <button class="tab active" onclick="switchTab('bulk')">Generazione Massiva</button>
+            <button class="tab" onclick="switchTab('manual')">VLSM Manuale</button>
         </div>
 
         <div id="tab-bulk" style="display: block;">
@@ -117,7 +117,7 @@
                 </div>
                 <div class="input-wrapper" style="flex:0;">
                     <label>&nbsp;</label>
-                    <button onclick="calculateBulk()">Calcola Piano</button>
+                    <button onclick="calculateBulk()">Calcola piano di indirizzamento</button>
                 </div>
             </div>
         </div>
